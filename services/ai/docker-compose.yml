@@ -1,0 +1,20 @@
+services:
+#  whisper:
+#    image: onerahmet/openai-whisper-asr-webservice:latest
+#    container_name: whisper
+#    environment:
+#      ASR_MODEL: "small"          # tiny / base / small / medium / large
+#      ASR_ENGINE: "openai_whisper"
+#      ASR_DEVICE: "gpu"           # "cuda" если есть GPU и настроишь
+#      ASR_BEAM_SIZE: "5"
+#    ports:
+#      - "9000:9000"               # наружу, если нужно дергать с хоста
+#    restart: unless-stopped
+
+  ai:
+    build:
+      dockerfile: docker/Dockerfile
+    env_file:
+      - .env
+
+    command: ["uvicorn", "ai.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"]
