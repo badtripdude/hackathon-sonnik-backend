@@ -10,8 +10,6 @@ package main
 
 import (
 	"context"
-	repo "github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/repository/postgres"
-	"github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/postgres"
 	"log"
 	"net/http"
 	"os"
@@ -19,9 +17,13 @@ import (
 	"syscall"
 	"time"
 
+	repo "github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/repository/postgres"
+	"github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/postgres"
+
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/config"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/controller/http/server"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/service"
+	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/subscription"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/auth"
 )
 
@@ -48,8 +50,9 @@ func main() {
 	queryTimeout := 5 * time.Second
 	userRepo := repo.NewPgUserRepo(db, queryTimeout)
 	refreshTokenRepo := repo.NewPgRefreshTokenRepo(db, queryTimeout)
+	subClient := subscription.NewHttpSubscriptionClient("http://robokassa_service:8082")
 
-	userSvc := service.NewUserService(*cfg, userRepo, refreshTokenRepo, privKey)
+	userSvc := service.NewUserService(*cfg, userRepo, refreshTokenRepo, privKey, subClient)
 
 	r := server.NewRouter(userSvc, pubKey)
 

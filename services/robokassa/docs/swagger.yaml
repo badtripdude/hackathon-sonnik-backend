@@ -1,0 +1,158 @@
+basePath: /
+definitions:
+  models.CreatePaymentRequest:
+    description: Request body for creating a payment
+    properties:
+      amount:
+        example: 100.5
+        type: number
+      currency:
+        example: USD
+        type: string
+      user_id:
+        example: 94a20574-f6f5-4659-a57b-1c8eb23591ac
+        type: string
+    type: object
+  models.ErrorResponse:
+    description: Standard error response
+    properties:
+      message:
+        example: payment not found
+        type: string
+    type: object
+  models.GetPaymentsByUserResponse:
+    description: Response for payments by user. Returns status of last payment
+    properties:
+      status:
+        example: success
+        type: string
+    type: object
+  models.PaymentResponse:
+    description: Payment object returned by create/get
+    properties:
+      amount:
+        example: 100.5
+        type: number
+      created_at:
+        example: "2025-11-15T20:13:25Z"
+        type: string
+      currency:
+        example: USD
+        type: string
+      id:
+        example: 550e8400-e29b-41d4-a716-446655440000
+        type: string
+      status:
+        allOf:
+        - $ref: '#/definitions/models.PaymentStatus'
+        example: created
+      updated_at:
+        example: "2025-11-15T20:13:25Z"
+        type: string
+      user_id:
+        example: 94a20574-f6f5-4659-a57b-1c8eb23591ac
+        type: string
+    type: object
+  models.PaymentStatus:
+    enum:
+    - created
+    - pending
+    - success
+    - failed
+    type: string
+    x-enum-varnames:
+    - PaymentStatusCreated
+    - PaymentStatusPending
+    - PaymentStatusSuccess
+    - PaymentStatusFailed
+host: localhost:8080
+info:
+  contact: {}
+  description: API для управления платежами через Robokassa
+  title: Robokassa Service API
+  version: "1.0"
+paths:
+  /payments:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve a payment by its ID
+      parameters:
+      - description: Payment ID
+        in: query
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment found
+          schema:
+            $ref: '#/definitions/models.PaymentResponse'
+        "400":
+          description: Missing ID
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: Payment not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get payment by ID
+      tags:
+      - payments
+    post:
+      consumes:
+      - application/json
+      description: Create a payment for a user with specified amount and currency
+      parameters:
+      - description: Create payment request
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.CreatePaymentRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Payment created successfully
+          schema:
+            $ref: '#/definitions/models.PaymentResponse'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "500":
+          description: Internal server error
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Create a new payment
+      tags:
+      - payments
+  /payments/user/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Retrieve payments for a specific user, returns last payment status
+      parameters:
+      - description: User ID
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User payments retrieved
+          schema:
+            $ref: '#/definitions/models.GetPaymentsByUserResponse'
+        "404":
+          description: Payments not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get payments by user ID
+      tags:
+      - payments
+swagger: "2.0"

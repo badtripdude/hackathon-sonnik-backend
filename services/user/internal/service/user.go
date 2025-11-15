@@ -9,6 +9,7 @@ import (
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/auth"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/config"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/models"
+	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/subscription"
 	errs "github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/errors"
 )
 
@@ -27,18 +28,20 @@ type UserRepo interface {
 }
 
 type UserService struct {
-	cfg              config.Config
-	userRepo         UserRepo
-	refreshTokenRepo RefreshTokenRepo
-	privateKey       *rsa.PrivateKey
+	cfg                config.Config
+	userRepo           UserRepo
+	refreshTokenRepo   RefreshTokenRepo
+	privateKey         *rsa.PrivateKey
+	subscriptionClient subscription.SubscriptionClient
 }
 
-func NewUserService(cfg config.Config, userRepo UserRepo, refreshTokenRepo RefreshTokenRepo, key *rsa.PrivateKey) *UserService {
+func NewUserService(cfg config.Config, userRepo UserRepo, refreshTokenRepo RefreshTokenRepo, key *rsa.PrivateKey, subscriptionClient subscription.SubscriptionClient) *UserService {
 	return &UserService{
-		cfg:              cfg,
-		userRepo:         userRepo,
-		refreshTokenRepo: refreshTokenRepo,
-		privateKey:       key,
+		cfg:                cfg,
+		userRepo:           userRepo,
+		refreshTokenRepo:   refreshTokenRepo,
+		privateKey:         key,
+		subscriptionClient: subscriptionClient,
 	}
 }
 
@@ -60,7 +63,7 @@ func (s *UserService) Register(ctx context.Context, email, password string, user
 		Email:        email,
 		PasswordHash: hashedPassword,
 		Username:     username,
-        BirthDate:    birthDate,
+		BirthDate:    birthDate,
 		CreatedAt:    time.Now(),
 	}
 
@@ -90,7 +93,7 @@ func (s *UserService) Register(ctx context.Context, email, password string, user
 	}, nil
 }
 
-func (s *UserService) Login(ctx context.Context, email, password string) (*models.TokenPair, error) {
+func (s *UserService) Login(ctx context.Context, email, password string) (*models.LoginResponse, error) {
 	user, err := s.userRepo.GetByEmail(ctx, email)
 	if err != nil {
 		if errors.Is(err, errs.ErrNotFound) {
@@ -101,6 +104,14 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 
 	if !auth.CheckPasswordHash(password, user.PasswordHash) {
 		return nil, errs.ErrPasswordMismatch
+	}
+
+	var subStatus *string
+	if s.subscriptionClient != nil {
+		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
+		if err == nil {
+			subStatus = &status
+		}
 	}
 
 	refreshToken, plain, err := auth.GenerateRefreshToken(user.ID, s.cfg.RefreshTokenTTL)
@@ -119,11 +130,12 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 		return nil, err
 	}
 
-	return &models.TokenPair{
-		UserID:       user.ID,
-		AccessToken:  accessToken,
-		RefreshToken: plain,
-		ExpiresAt:    exp,
+	return &models.LoginResponse{
+		UserID:             user.ID,
+		AccessToken:        accessToken,
+		RefreshToken:       plain,
+		ExpiresAt:          exp,
+		SubscriptionStatus: subStatus,
 	}, nil
 }
 
@@ -148,6 +160,13 @@ func (s *UserService) GetByID(ctx context.Context, id string) (*models.User, err
 			return nil, errs.ErrUserNotFound
 		}
 		return nil, err
+	}
+
+	if s.subscriptionClient != nil {
+		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
+		if err == nil {
+			user.SubscriptionStatus = &status
+		}
 	}
 
 	return user, nil
