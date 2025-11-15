@@ -1,0 +1,190 @@
+basePath: /
+definitions:
+  models.ErrorResponse:
+    properties:
+      error:
+        example: password mismatch
+        type: string
+    type: object
+  models.LoginRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.RefreshRequest:
+    properties:
+      refresh_token:
+        type: string
+    type: object
+  models.RegisterRequest:
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    type: object
+  models.TokenPair:
+    properties:
+      access_token:
+        example: eyJhbGciOiJSUzI1NiIsInR5cCI6IkpXVCJ9...
+        type: string
+      expires_at:
+        example: "2025-11-15T10:18:37Z"
+        type: string
+      refresh_token:
+        example: auGdrFA8HKbLrEY-2X9KTAtvzh9Qh-obHElRMtEg...
+        type: string
+      user_id:
+        example: 37d86688-021e-41ce-932a-841a047f0454
+        type: string
+    type: object
+  models.User:
+    properties:
+      created_at:
+        example: "2025-11-15T09:48:37Z"
+        type: string
+      email:
+        example: test@example.com
+        type: string
+      id:
+        example: 37d86688-021e-41ce-932a-841a047f0454
+        type: string
+      password_hash:
+        example: $2a$12$1eBqZjVvAY.gmfcRUlR24uR8sSZHcF/DIeJu/eM7z0USl6OVCFVFy
+        type: string
+    type: object
+host: localhost:8080
+info:
+  contact: {}
+  description: API documentation for Sonnik service
+  title: Sonnik API
+  version: "1.0"
+paths:
+  /auth/login:
+    post:
+      consumes:
+      - application/json
+      description: Authenticate user and return tokens
+      parameters:
+      - description: Login request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.LoginRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Successful login
+          schema:
+            $ref: '#/definitions/models.TokenPair'
+        "400":
+          description: Invalid body, wrong password, or user not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Login user
+      tags:
+      - auth
+  /auth/logout:
+    post:
+      consumes:
+      - application/json
+      description: Invalidate refresh token
+      parameters:
+      - description: Logout request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: No content
+        "400":
+          description: Invalid body or token not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Logout user
+      tags:
+      - auth
+  /auth/me:
+    get:
+      description: Return data of the authenticated user
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User info
+          schema:
+            $ref: '#/definitions/models.User'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Get current user info
+      tags:
+      - user
+  /auth/refresh:
+    post:
+      consumes:
+      - application/json
+      description: Generate new access and refresh tokens using refresh token
+      parameters:
+      - description: Refresh request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RefreshRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Refreshed tokens
+          schema:
+            $ref: '#/definitions/models.TokenPair'
+        "400":
+          description: Invalid request body
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "401":
+          description: Refresh token invalid, expired, or revoked
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Refresh tokens
+      tags:
+      - auth
+  /auth/register:
+    post:
+      consumes:
+      - application/json
+      description: Register a user with email and password
+      parameters:
+      - description: Register request body
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.RegisterRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: User tokens
+          schema:
+            $ref: '#/definitions/models.TokenPair'
+        "400":
+          description: Invalid body or user already exists
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Register new user
+      tags:
+      - auth
+schemes:
+- http
+swagger: "2.0"

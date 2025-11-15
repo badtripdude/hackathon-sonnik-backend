@@ -1,0 +1,55 @@
+services:
+  user_service:
+    build: .
+    container_name: user_service
+    ports:
+      - "${SERVER_HTTP_PORT}:8080"
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - core-net
+    command: ["/wait_for_postgres.sh", "./app"]
+    volumes:
+      - ./keys:/keys
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: postgres
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - core-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  goose:
+    build: ./tools/goose
+    container_name: goose
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./migrations:/migrations
+    entrypoint: ["/goose/entrypoint.sh"]
+    env_file:
+      - .env
+    networks:
+      - core-net
+
+volumes:
+  postgres_data:
+
+
+networks:
+  core-net:
+    external: true
