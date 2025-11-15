@@ -1,0 +1,11 @@
+-- +goose Up
+ALTER TABLE users
+ALTER COLUMN username DROP NOT NULL,
+ALTER COLUMN username DROP DEFAULT,
+ALTER COLUMN birth_date DROP NOT NULL,
+ALTER COLUMN birth_date DROP DEFAULT;
+
+-- +goose Down
+ALTER TABLE users
+ALTER COLUMN username SET NOT NULL,
+ALTER COLUMN birth_date SET NOT NULL;
