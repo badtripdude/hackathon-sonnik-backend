@@ -1,20 +1,47 @@
 services:
-#  whisper:
-#    image: onerahmet/openai-whisper-asr-webservice:latest
-#    container_name: whisper
-#    environment:
-#      ASR_MODEL: "small"          # tiny / base / small / medium / large
-#      ASR_ENGINE: "openai_whisper"
-#      ASR_DEVICE: "gpu"           # "cuda" если есть GPU и настроишь
-#      ASR_BEAM_SIZE: "5"
-#    ports:
-#      - "9000:9000"               # наружу, если нужно дергать с хоста
-#    restart: unless-stopped
+  db:
+    image: postgres:18.0
+    volumes:
+      - postgres_data:/var/lib/postgresql/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-dev} -d ${DB_NAME:-store} -p 5432" ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
+    environment:
+      POSTGRES_DB: ${DB_NAME:-store}
+      POSTGRES_USER: ${DB_USER:-dev}
+      POSTGRES_PASSWORD: ${DB_PASS:-dev}
+    restart: always
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    expose:
+      - 5432
+    command: [ "postgres", "-c", "listen_addresses=*" ]
+
+  notifier-migrate:
+    build:
+      dockerfile: docker/Dockerfile
+    command: [ "python", "-m", "alembic", "upgrade", "head" ]
+    depends_on:
+      db: { condition: service_healthy }
+    working_dir: /app
+    restart: "no"
+    env_file:
+      - .env
 
   ai:
     build:
       dockerfile: docker/Dockerfile
     env_file:
       - .env
+    ports:
+      - "9090:9090"
+    expose:
+      - 9090
+    command: [ "uvicorn", "ai.main:app", "--host", "0.0.0.0", "--port", "9090", "--app-dir", "src" ]
 
-    command: ["uvicorn", "ai.main:app", "--host", "0.0.0.0", "--port", "8000", "--app-dir", "src"]
+volumes:
+  postgres_data:

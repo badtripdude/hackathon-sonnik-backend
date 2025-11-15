@@ -1,3 +1,5 @@
+import uuid
+from datetime import datetime
 from typing import List, Optional
 
 
@@ -50,3 +52,77 @@ class AsrResponse(BaseModel):
     text: str
     language: Optional[str] = None
     model: str
+
+class InterpretRequest(BaseModel):
+    user_id: uuid.UUID | None = None
+    chat_id: uuid.UUID | None = None
+    message: str
+
+
+class InterpretResponse(BaseModel):
+    chat_id: uuid.UUID
+    reply: str
+
+
+from datetime import datetime
+from uuid import UUID
+from pydantic import BaseModel
+
+
+class FolderCreate(BaseModel):
+    user_id: UUID
+    title: str
+
+
+class FolderRename(BaseModel):
+    user_id: UUID
+    title: str
+
+
+class FolderOut(BaseModel):
+    id: UUID
+    title: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True
+
+
+class ChatCreate(BaseModel):
+    user_id: UUID
+    title: str
+    folder_id: UUID | None = None
+
+
+class ChatRename(BaseModel):
+    user_id: UUID
+    title: str
+
+
+class ChatOut(BaseModel):
+    id: UUID
+    title: str
+    folder_id: UUID | None
+    created_at: datetime
+    updated_at: datetime | None = None
+
+    class Config:
+        orm_mode = True
+
+
+class MessageCreate(BaseModel):
+    user_id: UUID
+    role: str
+    content: str
+
+
+class MessageOut(BaseModel):
+    id: UUID
+    chat_id: UUID
+    user_id: UUID | None
+    role: str
+    content: str
+    created_at: datetime
+
+    class Config:
+        orm_mode = True

@@ -9,12 +9,15 @@ description = "AI service"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
+    "alembic>=1.17.2",
+    "asyncpg>=0.30.0",
     "elevenlabs>=2.22.1",
     "fastapi>=0.121.2",
     "httpx>=0.28.1",
     "openai>=2.8.0",
     "pydantic-settings>=2.12.0",
     "python-multipart>=0.0.20",
+    "sqlalchemy>=2.0.44",
     "uvicorn>=0.38.0",
 ]
 
