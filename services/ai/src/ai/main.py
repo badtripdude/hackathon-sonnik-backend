@@ -368,6 +368,37 @@ async def add_message(
     return msg
 
 
+@app.delete("/folders/{folder_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_folder(
+        folder_id: UUID,
+        user_id: UUID,
+        repo: ChatRepository = Depends(get_chat_repo),
+):
+    """
+    DELETE /ai/folders/{folder_id}?user_id=...
+    """
+    ok = await repo.delete_folder(folder_id=folder_id, user_id=user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Folder not found")
+    # 204 — без тела
+    return
+
+
+@app.delete("/chats/{chat_id}", status_code=status.HTTP_204_NO_CONTENT)
+async def delete_chat(
+        chat_id: UUID,
+        user_id: UUID,
+        repo: ChatRepository = Depends(get_chat_repo),
+):
+    """
+    DELETE /ai/chats/{chat_id}?user_id=...
+    """
+    ok = await repo.delete_chat(chat_id=chat_id, user_id=user_id)
+    if not ok:
+        raise HTTPException(status_code=404, detail="Chat not found")
+    return
+
+
 @app.get("/ai/health")
 async def health():
     return JSONResponse({"status": "ok"})

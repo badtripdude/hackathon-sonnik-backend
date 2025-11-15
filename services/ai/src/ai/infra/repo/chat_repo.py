@@ -37,6 +37,23 @@ class ChatRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def delete_folder(
+        self,
+        folder_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        """
+        Удаляет папку пользователя.
+        Ожидаем, что в БД стоят каскадные связи на чаты/сообщения
+        (ON DELETE CASCADE) либо folder_id nullable.
+        """
+        folder = await self.get_folder(folder_id=folder_id, user_id=user_id)
+        if folder is None:
+            return False
+
+        await self.db.delete(folder)
+        await self.db.commit()
+        return True
     # ---------- CHATS ----------
 
     async def create_chat(
@@ -77,6 +94,22 @@ class ChatRepository:
         result = await self.db.execute(stmt)
         return result.scalar_one_or_none()
 
+    async def delete_chat(
+        self,
+        chat_id: uuid.UUID,
+        user_id: uuid.UUID,
+    ) -> bool:
+        """
+        Удаляет чат пользователя.
+        Ожидаем, что сообщения удалятся каскадно.
+        """
+        chat = await self.get_chat(chat_id=chat_id, user_id=user_id)
+        if chat is None:
+            return False
+
+        await self.db.delete(chat)
+        await self.db.commit()
+        return True
     # ---------- MESSAGES ----------
 
     async def add_message(

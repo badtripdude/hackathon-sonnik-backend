@@ -1,0 +1,55 @@
+version: "3.9"
+
+services:
+  db:
+    image: postgres:18.0
+    environment:
+      POSTGRES_DB: ${DB_NAME:-store}
+      POSTGRES_USER: ${DB_USER:-dev}
+      POSTGRES_PASSWORD: ${DB_PASS:-dev}
+    volumes:
+      - postgres_data:/var/lib/postgresql/
+    ports:
+      - "5432:5432"
+    deploy:
+      restart_policy:
+        condition: any
+
+  ai-migrate:
+    image: myregistry.com/ai:latest   # тот же образ что и у ai
+    working_dir: /app
+    command: >
+      sh -c "
+      until pg_isready -h db -p 5432 -U ${DB_USER:-dev}; do
+        echo 'Waiting for Postgres...';
+        sleep 1;
+      done &&
+      alembic upgrade head
+      "
+    env_file:
+      - .env
+    deploy:
+      restart_policy:
+        condition: none
+
+  ai:
+    image: myregistry.com/ai:latest
+    working_dir: /app
+    command: >
+      sh -c "
+      until pg_isready -h db -p 5432 -U ${DB_USER:-dev}; do
+        echo 'Waiting for Postgres...';
+        sleep 1;
+      done &&
+      uvicorn ai.main:app --host 0.0.0.0 --port 9090 --app-dir src
+      "
+    env_file:
+      - .env
+    ports:
+      - "9090:9090"
+    deploy:
+      restart_policy:
+        condition: any
+
+volumes:
+  postgres_data:
