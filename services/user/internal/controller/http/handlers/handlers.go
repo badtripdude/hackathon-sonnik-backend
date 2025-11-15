@@ -28,10 +28,10 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 // @Router /auth/register [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email     string `json:"email"`
-		Password  string `json:"password"`
-		Username  string `json:"username"`
-		BirthDate string `json:"birth_date"`
+		Email     string  `json:"email"`
+		Password  string  `json:"password"`
+		Username  *string `json:"username"`
+		BirthDate *string `json:"birth_date"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -39,13 +39,17 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
-	if err != nil {
-		http.Error(w, "invalid birth_date format", http.StatusBadRequest)
-		return
+	var birthDatePtr *time.Time
+	if req.BirthDate != nil {
+		parsed, err := time.Parse("2006-01-02", *req.BirthDate)
+		if err != nil {
+			http.Error(w, "invalid birth_date format", http.StatusBadRequest)
+			return
+		}
+		birthDatePtr = &parsed
 	}
 
-	tokens, err := h.svc.Register(r.Context(), req.Email, req.Password, req.Username, birthDate)
+	tokens, err := h.svc.Register(r.Context(), req.Email, req.Password, req.Username, birthDatePtr)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return

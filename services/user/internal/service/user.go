@@ -42,7 +42,7 @@ func NewUserService(cfg config.Config, userRepo UserRepo, refreshTokenRepo Refre
 	}
 }
 
-func (s *UserService) Register(ctx context.Context, email, password, username string, birthDate time.Time) (*models.TokenPair, error) {
+func (s *UserService) Register(ctx context.Context, email, password string, username *string, birthDate *time.Time) (*models.TokenPair, error) {
 	_, err := s.userRepo.GetByEmail(ctx, email)
 	if err == nil {
 		return nil, errs.ErrUserAlreadyExists
