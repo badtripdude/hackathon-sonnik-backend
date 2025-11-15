@@ -183,7 +183,6 @@ pyrightconfig.json
 [Ll]ib
 [Ll]ib64
 [Ll]ocal
-[Ss]cripts
 pyvenv.cfg
 pip-selfcheck.json
 
@@ -426,4 +425,3 @@ go.work.sum
 pkg/bin
 
 lefthook.yaml
-!services/user/scripts/wait_for_postgres.sh
