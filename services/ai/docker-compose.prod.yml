@@ -1,55 +1,47 @@
-version: "3.9"
-
 services:
   db:
     image: postgres:18.0
+    volumes:
+      - postgres_data:/var/lib/postgresql/
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U ${DB_USER:-dev} -d ${DB_NAME:-store} -p 5432" ]
+      interval: 2s
+      timeout: 5s
+      retries: 10
     environment:
       POSTGRES_DB: ${DB_NAME:-store}
       POSTGRES_USER: ${DB_USER:-dev}
       POSTGRES_PASSWORD: ${DB_PASS:-dev}
-    volumes:
-      - postgres_data:/var/lib/postgresql/
+    restart: always
     ports:
       - "5432:5432"
-    deploy:
-      restart_policy:
-        condition: any
-
-  ai-migrate:
-    image: myregistry.com/ai:latest   # тот же образ что и у ai
-    working_dir: /app
-    command: >
-      sh -c "
-      until pg_isready -h db -p 5432 -U ${DB_USER:-dev}; do
-        echo 'Waiting for Postgres...';
-        sleep 1;
-      done &&
-      alembic upgrade head
-      "
     env_file:
       - .env
-    deploy:
-      restart_policy:
-        condition: none
+    expose:
+      - 5432
+    command: [ "postgres", "-c", "listen_addresses=*" ]
+
+  ai-migrate:
+    image: ai_migrate
+    command: [ "python", "-m", "alembic", "upgrade", "head" ]
+    depends_on:
+      db: { condition: service_healthy }
+    working_dir: /app
+    restart: "no"
+    env_file:
+      - .env
 
   ai:
-    image: myregistry.com/ai:latest
-    working_dir: /app
-    command: >
-      sh -c "
-      until pg_isready -h db -p 5432 -U ${DB_USER:-dev}; do
-        echo 'Waiting for Postgres...';
-        sleep 1;
-      done &&
-      uvicorn ai.main:app --host 0.0.0.0 --port 9090 --app-dir src
-      "
+    image: ai
+    build:
+      dockerfile: docker/Dockerfile
     env_file:
       - .env
     ports:
       - "9090:9090"
-    deploy:
-      restart_policy:
-        condition: any
+    expose:
+      - 9090
+    command: [ "uvicorn", "ai.main:app", "--host", "0.0.0.0", "--port", "9090", "--app-dir", "src" ]
 
 volumes:
   postgres_data:

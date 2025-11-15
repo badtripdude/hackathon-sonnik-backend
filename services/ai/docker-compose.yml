@@ -33,6 +33,7 @@ services:
       - .env
 
   ai:
+    network_mode: "host"
     build:
       dockerfile: docker/Dockerfile
     env_file:
