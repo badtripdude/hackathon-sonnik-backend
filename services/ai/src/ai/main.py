@@ -5,7 +5,9 @@ from uuid import UUID
 
 from elevenlabs import ElevenLabs
 from fastapi import FastAPI, UploadFile, File, HTTPException, Depends, status
-from fastapi.responses import StreamingResponse, JSONResponse
+from fastapi.concurrency import iterate_in_threadpool
+from fastapi.responses import JSONResponse
+from fastapi.responses import StreamingResponse, HTMLResponse
 from openai import OpenAI
 
 from ai.application.gpt import call_gpt
@@ -16,12 +18,17 @@ from ai.infra.repo.chat_repo import ChatRepository
 from ai.shemas import GptResponse, GptRequest, AsrResponse, TtsRequest, InterpretRequest, InterpretResponse, \
     MessageCreate, MessageOut, FolderOut, FolderCreate, FolderRename, ChatOut, ChatCreate, ChatRename
 
+# proxy = "http://UPXjk6scK:MjBYBFRMc@172.120.182.9:63550"
+#
+# httpx_client = httpx.Client(proxy=proxy, timeout=240)
 openai_client = OpenAI(
     api_key=os.getenv("OPENAI_API_KEY"),
 )
 
 eleven_client = ElevenLabs(
     api_key=os.getenv("ELEVENLABS_API_KEY"),
+    base_url="https://api.elevenlabs.io/",
+    # httpx_client=httpx_client,
 )
 app = FastAPI(title="AI", version="0.1.0",
               )
@@ -75,20 +82,18 @@ async def tts_elevenlabs(req: TtsRequest):
         raise HTTPException(status_code=400, detail="voice_id is required (no default set)")
 
     try:
-        raw_audio = eleven_client.text_to_speech.convert(
+        audio = eleven_client.text_to_speech.convert(
             voice_id=voice_id,
             model_id=req.model_id,
             text=req.text,
             output_format=req.output_format,
         )
 
-        # если convert() возвращает генератор байтов:
-        def iter_audio():
-            for chunk in raw_audio:
-                # гарантируем, что это bytes
-                if isinstance(chunk, str):
-                    chunk = chunk.encode("utf-8")
-                yield chunk
+        async def audio_stream():
+            # превращаем обычный генератор в async-итератор
+            async for chunk in iterate_in_threadpool(audio):
+                if chunk:
+                    yield chunk
 
         headers = {
             "x-voice-id": voice_id,
@@ -96,12 +101,44 @@ async def tts_elevenlabs(req: TtsRequest):
         }
 
         return StreamingResponse(
-            iter_audio(),
+            audio_stream(),
             media_type="audio/mpeg",
-            headers=headers,
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"TTS error: {e}")
+
+
+@app.get("/test/tts")
+def tts():
+    audio = eleven_client.text_to_speech.convert(
+        voice_id="JBFqnCBsd6RMkjVDRZzb",
+        output_format="mp3_44100_128",
+        text="The first move is what sets everything in motion.",
+        model_id="eleven_multilingual_v2",
+    )
+
+    def audio_stream():
+        for chunk in audio:
+            if chunk:
+                yield chunk
+
+    return StreamingResponse(audio_stream(), media_type="audio/mpeg")
+
+
+@app.get("/player", response_class=HTMLResponse)
+def player():
+    return """
+    <!doctype html>
+    <html>
+      <body>
+        <h3>TTS demo</h3>
+        <audio controls>
+          <source src="/test/tts" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+      </body>
+    </html>
+    """
 
 
 # ---------- GPT Text-To-Text: /ai/gpt ----------
