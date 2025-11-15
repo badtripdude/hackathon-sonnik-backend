@@ -50,6 +50,15 @@ definitions:
         example: 37d86688-021e-41ce-932a-841a047f0454
         type: string
     type: object
+  models.UpdateUserRequest:
+    properties:
+      email:
+        example: john@example.com
+        type: string
+      username:
+        example: John
+        type: string
+    type: object
   models.User:
     properties:
       birth_date:
@@ -66,6 +75,9 @@ definitions:
         type: string
       password_hash:
         example: $2a$12$1eBqZjVvAY.gmfcRUlR24uR8sSZHcF/DIeJu/eM7z0USl6OVCFVFy
+        type: string
+      subscription_status:
+        description: for API
         type: string
       username:
         example: JohnDoe
@@ -201,6 +213,41 @@ paths:
       summary: Register new user
       tags:
       - auth
+  /auth/user/{id}:
+    patch:
+      consumes:
+      - application/json
+      description: Update email or username for user
+      parameters:
+      - description: User ID
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: Fields to update
+        in: body
+        name: request
+        required: true
+        schema:
+          $ref: '#/definitions/models.UpdateUserRequest'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Updated user
+          schema:
+            $ref: '#/definitions/models.User'
+        "400":
+          description: Invalid request
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+        "404":
+          description: User not found
+          schema:
+            $ref: '#/definitions/models.ErrorResponse'
+      summary: Update user data
+      tags:
+      - user
 schemes:
 - http
 swagger: "2.0"

@@ -8,6 +8,14 @@ const (
 	RETURNING id;
 	`
 
+	updateUserQuery = `
+    UPDATE users
+    SET email = COALESCE($1, email),
+        username = COALESCE($2, username)
+    WHERE id = $3
+    RETURNING id, email, password_hash, username, birth_date, created_at;
+	`
+
 	getUserByEmailQuery = `
 	SELECT id, email, password_hash, created_at
 	FROM users

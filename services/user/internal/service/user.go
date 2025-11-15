@@ -25,6 +25,7 @@ type UserRepo interface {
 	GetByEmail(ctx context.Context, email string) (*models.User, error)
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	DeleteByID(ctx context.Context, id string) error
+	Update(ctx context.Context, id string, email *string, username *string) (*models.User, error)
 }
 
 type UserService struct {
@@ -159,6 +160,22 @@ func (s *UserService) GetByID(ctx context.Context, id string) (*models.User, err
 		if errors.Is(err, errs.ErrNotFound) {
 			return nil, errs.ErrUserNotFound
 		}
+		return nil, err
+	}
+
+	if s.subscriptionClient != nil {
+		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
+		if err == nil {
+			user.SubscriptionStatus = &status
+		}
+	}
+
+	return user, nil
+}
+
+func (s *UserService) UpdateUser(ctx context.Context, id string, email *string, username *string) (*models.User, error) {
+	user, err := s.userRepo.Update(ctx, id, email, username)
+	if err != nil {
 		return nil, err
 	}
 

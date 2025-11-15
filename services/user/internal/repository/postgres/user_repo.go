@@ -40,6 +40,29 @@ func (pg *PgUserRepo) Save(ctx context.Context, user *models.User) error {
 	return nil
 }
 
+func (pg *PgUserRepo) Update(ctx context.Context, id string, email *string, username *string) (*models.User, error) {
+	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+	defer cancel()
+
+	user := &models.User{}
+
+	err := pg.db.QueryRowxContext(timeout,
+		updateUserQuery,
+		email,
+		username,
+		id,
+	).StructScan(user)
+
+	if err != nil {
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, errs.ErrNotFound
+		}
+		return nil, err
+	}
+
+	return user, nil
+}
+
 func (pg *PgUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
 

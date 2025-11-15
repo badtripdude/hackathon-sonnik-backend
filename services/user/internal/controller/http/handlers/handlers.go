@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/service"
+	"github.com/gorilla/mux"
 )
 
 type UserHandler struct {
@@ -56,6 +57,41 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	}
 
 	json.NewEncoder(w).Encode(tokens)
+}
+
+// UpdateUser godoc
+// @Summary Update user data
+// @Description Update email or username for user
+// @Tags user
+// @Accept json
+// @Produce json
+// @Param id path string true "User ID"
+// @Param request body models.UpdateUserRequest true "Fields to update"
+// @Success 200 {object} models.User "Updated user"
+// @Failure 400 {object} models.ErrorResponse "Invalid request"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Router /auth/user/{id} [patch]
+func (h *UserHandler) UpdateUser(w http.ResponseWriter, r *http.Request) {
+	var body struct {
+		Email    *string `json:"email"`
+		Username *string `json:"username"`
+	}
+
+	if err := json.NewDecoder(r.Body).Decode(&body); err != nil {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	user, err := h.svc.UpdateUser(r.Context(), id, body.Email, body.Username)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	json.NewEncoder(w).Encode(user)
 }
 
 // Login godoc
