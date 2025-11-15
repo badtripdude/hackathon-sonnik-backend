@@ -67,10 +67,6 @@ async def asr_whisper(
 
 @app.post("/ai/tts")
 async def tts_elevenlabs(req: TtsRequest):
-    """
-    Text-To-Speech через ElevenLabs.
-    Отдаём аудио стримом (audio/mpeg).
-    """
     if not os.getenv("ELEVENLABS_API_KEY"):
         raise HTTPException(status_code=500, detail="ELEVENLABS_API_KEY is not set")
 
@@ -79,19 +75,20 @@ async def tts_elevenlabs(req: TtsRequest):
         raise HTTPException(status_code=400, detail="voice_id is required (no default set)")
 
     try:
-        # ElevenLabs Python SDK возвращает bytes
-        audio_bytes: bytes = eleven_client.text_to_speech.convert(
+        raw_audio = eleven_client.text_to_speech.convert(
             voice_id=voice_id,
             model_id=req.model_id,
             text=req.text,
             output_format=req.output_format,
         )
 
-        filename = "tts_output.mp3"
-        media_type = "audio/mpeg"
-
-        def iterfile():
-            yield audio_bytes
+        # если convert() возвращает генератор байтов:
+        def iter_audio():
+            for chunk in raw_audio:
+                # гарантируем, что это bytes
+                if isinstance(chunk, str):
+                    chunk = chunk.encode("utf-8")
+                yield chunk
 
         headers = {
             "x-voice-id": voice_id,
@@ -99,8 +96,8 @@ async def tts_elevenlabs(req: TtsRequest):
         }
 
         return StreamingResponse(
-            iterfile(),
-            media_type=media_type,
+            iter_audio(),
+            media_type="audio/mpeg",
             headers=headers,
         )
     except Exception as e:
