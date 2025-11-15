@@ -21,7 +21,7 @@ services:
       - 5432
     command: [ "postgres", "-c", "listen_addresses=*" ]
 
-  notifier-migrate:
+  ai-migrate:
     build:
       dockerfile: docker/Dockerfile
     command: [ "python", "-m", "alembic", "upgrade", "head" ]
