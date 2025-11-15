@@ -1,0 +1,232 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "description": "API для управления платежами через Robokassa",
+        "title": "Robokassa Service API",
+        "contact": {},
+        "version": "1.0"
+    },
+    "host": "localhost:8080",
+    "basePath": "/",
+    "paths": {
+        "/payments": {
+            "get": {
+                "description": "Retrieve a payment by its ID",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get payment by ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Payment ID",
+                        "name": "id",
+                        "in": "query",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment found",
+                        "schema": {
+                            "$ref": "#/definitions/models.PaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Missing ID",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Payment not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            },
+            "post": {
+                "description": "Create a payment for a user with specified amount and currency",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Create a new payment",
+                "parameters": [
+                    {
+                        "description": "Create payment request",
+                        "name": "request",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/models.CreatePaymentRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Payment created successfully",
+                        "schema": {
+                            "$ref": "#/definitions/models.PaymentResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Invalid request body",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal server error",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/payments/user/{user_id}": {
+            "get": {
+                "description": "Retrieve payments for a specific user, returns last payment status",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "payments"
+                ],
+                "summary": "Get payments by user ID",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "User ID",
+                        "name": "user_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "User payments retrieved",
+                        "schema": {
+                            "$ref": "#/definitions/models.GetPaymentsByUserResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Payments not found",
+                        "schema": {
+                            "$ref": "#/definitions/models.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "models.CreatePaymentRequest": {
+            "description": "Request body for creating a payment",
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 100.5
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "USD"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "94a20574-f6f5-4659-a57b-1c8eb23591ac"
+                }
+            }
+        },
+        "models.ErrorResponse": {
+            "description": "Standard error response",
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string",
+                    "example": "payment not found"
+                }
+            }
+        },
+        "models.GetPaymentsByUserResponse": {
+            "description": "Response for payments by user. Returns status of last payment",
+            "type": "object",
+            "properties": {
+                "status": {
+                    "type": "string",
+                    "example": "success"
+                }
+            }
+        },
+        "models.PaymentResponse": {
+            "description": "Payment object returned by create/get",
+            "type": "object",
+            "properties": {
+                "amount": {
+                    "type": "number",
+                    "example": 100.5
+                },
+                "created_at": {
+                    "type": "string",
+                    "example": "2025-11-15T20:13:25Z"
+                },
+                "currency": {
+                    "type": "string",
+                    "example": "USD"
+                },
+                "id": {
+                    "type": "string",
+                    "example": "550e8400-e29b-41d4-a716-446655440000"
+                },
+                "status": {
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/models.PaymentStatus"
+                        }
+                    ],
+                    "example": "created"
+                },
+                "updated_at": {
+                    "type": "string",
+                    "example": "2025-11-15T20:13:25Z"
+                },
+                "user_id": {
+                    "type": "string",
+                    "example": "94a20574-f6f5-4659-a57b-1c8eb23591ac"
+                }
+            }
+        },
+        "models.PaymentStatus": {
+            "type": "string",
+            "enum": [
+                "created",
+                "pending",
+                "success",
+                "failed"
+            ],
+            "x-enum-varnames": [
+                "PaymentStatusCreated",
+                "PaymentStatusPending",
+                "PaymentStatusSuccess",
+                "PaymentStatusFailed"
+            ]
+        }
+    }
+}

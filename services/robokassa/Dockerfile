@@ -1,6 +1,4 @@
-FROM golang:1.24.3-alpine AS builder
-
-RUN apk add --no-cache git
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -12,13 +10,11 @@ COPY . .
 RUN go build -o app ./cmd
 
 FROM alpine:latest
-
-RUN apk add --no-cache bash postgresql-client jq
+RUN apk add --no-cache bash postgresql-client
 
 WORKDIR /app
-
-COPY --from=builder /app/app .
+COPY --from=builder /app/app mock
 COPY scripts/wait_for_postgres.sh /wait_for_postgres.sh
 RUN chmod +x /wait_for_postgres.sh
 
-CMD ["./app"]  
+CMD ["./mock"]
