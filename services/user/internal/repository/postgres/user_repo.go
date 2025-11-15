@@ -63,6 +63,25 @@ func (pg *PgUserRepo) Update(ctx context.Context, id string, email *string, user
 	return user, nil
 }
 
+func (pg *PgUserRepo) UpdateAvatar(ctx context.Context, id string, avatar []byte) error {
+	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+	defer cancel()
+
+	res, err := pg.db.ExecContext(timeout, updateUserAvatarQuery, avatar, id)
+	if err != nil {
+		return err
+	}
+
+	rows, err := res.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if rows == 0 {
+		return errs.ErrNotFound
+	}
+	return nil
+}
+
 func (pg *PgUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
 	user := &models.User{}
 

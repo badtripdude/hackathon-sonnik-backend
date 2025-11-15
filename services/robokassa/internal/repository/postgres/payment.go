@@ -21,8 +21,19 @@ func (pg *PgPaymentRepo) Save(ctx context.Context, p *models.Payment) error {
 	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
 	defer cancel()
 
-	_, err := pg.db.NamedExecContext(timeout, savePaymentQuery, p)
-	return err
+	rows, err := pg.db.NamedQueryContext(timeout, savePaymentQuery, p)
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+
+	if rows.Next() {
+		if err := rows.Scan(&p.CreatedAt, &p.UpdatedAt); err != nil {
+			return err
+		}
+	}
+
+	return nil
 }
 
 func (pg *PgPaymentRepo) GetByID(ctx context.Context, id string) (*models.Payment, error) {

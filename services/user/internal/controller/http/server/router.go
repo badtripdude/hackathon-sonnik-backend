@@ -20,6 +20,8 @@ func NewRouter(userSvc *service.UserService, pubKey *rsa.PublicKey) http.Handler
 	r.HandleFunc("/auth/logout", h.Logout).Methods("POST")
 	r.Handle("/auth/me", middleware.JWTMiddleware(pubKey)(h.Me)).Methods("GET")
 	r.Handle("/auth/user/{id}", middleware.JWTMiddleware(pubKey)(h.UpdateUser)).Methods("PATCH")
+	r.HandleFunc("/auth/user/{id}/avatar", h.UploadAvatar).Methods("POST")
+	r.HandleFunc("/auth/user/{id}/avatar", h.UpdateAvatar).Methods("PATCH")
 
 	return r
 }

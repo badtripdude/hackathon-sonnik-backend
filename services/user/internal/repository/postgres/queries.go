@@ -8,6 +8,12 @@ const (
 	RETURNING id;
 	`
 
+	updateUserAvatarQuery = `
+    UPDATE users
+    SET avatar = $1
+    WHERE id = $2;
+    `
+
 	updateUserQuery = `
     UPDATE users
     SET email = COALESCE($1, email),

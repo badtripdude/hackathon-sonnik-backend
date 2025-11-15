@@ -8,6 +8,7 @@ services:
       - ./services/user/.env
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./services/robokassa/internal/repository/postgres/init_scripts:/docker-entrypoint-initdb.d
     networks:
       - core-net
     healthcheck:

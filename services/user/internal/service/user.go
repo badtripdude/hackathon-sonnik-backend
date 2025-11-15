@@ -9,7 +9,6 @@ import (
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/auth"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/config"
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/models"
-	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/subscription"
 	errs "github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/errors"
 )
 
@@ -26,23 +25,22 @@ type UserRepo interface {
 	GetByID(ctx context.Context, id string) (*models.User, error)
 	DeleteByID(ctx context.Context, id string) error
 	Update(ctx context.Context, id string, email *string, username *string) (*models.User, error)
+	UpdateAvatar(ctx context.Context, id string, avatar []byte) error
 }
 
 type UserService struct {
-	cfg                config.Config
-	userRepo           UserRepo
-	refreshTokenRepo   RefreshTokenRepo
-	privateKey         *rsa.PrivateKey
-	subscriptionClient subscription.SubscriptionClient
+	cfg              config.Config
+	userRepo         UserRepo
+	refreshTokenRepo RefreshTokenRepo
+	privateKey       *rsa.PrivateKey
 }
 
-func NewUserService(cfg config.Config, userRepo UserRepo, refreshTokenRepo RefreshTokenRepo, key *rsa.PrivateKey, subscriptionClient subscription.SubscriptionClient) *UserService {
+func NewUserService(cfg config.Config, userRepo UserRepo, refreshTokenRepo RefreshTokenRepo, key *rsa.PrivateKey) *UserService {
 	return &UserService{
-		cfg:                cfg,
-		userRepo:           userRepo,
-		refreshTokenRepo:   refreshTokenRepo,
-		privateKey:         key,
-		subscriptionClient: subscriptionClient,
+		cfg:              cfg,
+		userRepo:         userRepo,
+		refreshTokenRepo: refreshTokenRepo,
+		privateKey:       key,
 	}
 }
 
@@ -107,14 +105,6 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 		return nil, errs.ErrPasswordMismatch
 	}
 
-	var subStatus *string
-	if s.subscriptionClient != nil {
-		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
-		if err == nil {
-			subStatus = &status
-		}
-	}
-
 	refreshToken, plain, err := auth.GenerateRefreshToken(user.ID, s.cfg.RefreshTokenTTL)
 	if err != nil {
 		return nil, err
@@ -132,11 +122,10 @@ func (s *UserService) Login(ctx context.Context, email, password string) (*model
 	}
 
 	return &models.LoginResponse{
-		UserID:             user.ID,
-		AccessToken:        accessToken,
-		RefreshToken:       plain,
-		ExpiresAt:          exp,
-		SubscriptionStatus: subStatus,
+		UserID:       user.ID,
+		AccessToken:  accessToken,
+		RefreshToken: plain,
+		ExpiresAt:    exp,
 	}, nil
 }
 
@@ -163,13 +152,6 @@ func (s *UserService) GetByID(ctx context.Context, id string) (*models.User, err
 		return nil, err
 	}
 
-	if s.subscriptionClient != nil {
-		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
-		if err == nil {
-			user.SubscriptionStatus = &status
-		}
-	}
-
 	return user, nil
 }
 
@@ -177,13 +159,6 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, email *string, 
 	user, err := s.userRepo.Update(ctx, id, email, username)
 	if err != nil {
 		return nil, err
-	}
-
-	if s.subscriptionClient != nil {
-		status, err := s.subscriptionClient.GetStatus(ctx, user.ID)
-		if err == nil {
-			user.SubscriptionStatus = &status
-		}
 	}
 
 	return user, nil
@@ -239,4 +214,12 @@ func (s *UserService) Refresh(ctx context.Context, plainRefreshToken string) (*m
 		RefreshToken: newPlain,
 		ExpiresAt:    exp,
 	}, nil
+}
+
+func (s *UserService) UploadAvatar(ctx context.Context, id string, avatar []byte) error {
+	return s.userRepo.UpdateAvatar(ctx, id, avatar)
+}
+
+func (s *UserService) UpdateAvatar(ctx context.Context, id string, avatar []byte) error {
+	return s.userRepo.UpdateAvatar(ctx, id, avatar)
 }

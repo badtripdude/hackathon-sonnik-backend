@@ -59,6 +59,82 @@ func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(tokens)
 }
 
+// UploadAvatar godoc
+// @Summary Upload avatar for user
+// @Description Upload avatar image for user
+// @Tags user
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "User ID"
+// @Param avatar formData file true "Avatar image"
+// @Success 200 {string} string "Avatar uploaded successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid file"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Router /auth/user/{id}/avatar [post]
+func (h *UserHandler) UploadAvatar(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	file, _, err := r.FormFile("avatar")
+	if err != nil {
+		http.Error(w, "invalid file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	avatar := make([]byte, r.ContentLength)
+	_, err = file.Read(avatar)
+	if err != nil {
+		http.Error(w, "failed to read file", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.svc.UploadAvatar(r.Context(), id, avatar); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Write([]byte("Avatar uploaded successfully"))
+}
+
+// UpdateAvatar godoc
+// @Summary Update avatar for user
+// @Description Replace existing avatar with a new one
+// @Tags user
+// @Accept multipart/form-data
+// @Produce json
+// @Param id path string true "User ID"
+// @Param avatar formData file true "New avatar image"
+// @Success 200 {string} string "Avatar updated successfully"
+// @Failure 400 {object} models.ErrorResponse "Invalid file"
+// @Failure 404 {object} models.ErrorResponse "User not found"
+// @Router /auth/user/{id}/avatar [patch]
+func (h *UserHandler) UpdateAvatar(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	id := vars["id"]
+
+	file, _, err := r.FormFile("avatar")
+	if err != nil {
+		http.Error(w, "invalid file", http.StatusBadRequest)
+		return
+	}
+	defer file.Close()
+
+	avatar := make([]byte, r.ContentLength)
+	_, err = file.Read(avatar)
+	if err != nil {
+		http.Error(w, "failed to read file", http.StatusBadRequest)
+		return
+	}
+
+	if err := h.svc.UpdateAvatar(r.Context(), id, avatar); err != nil {
+		http.Error(w, err.Error(), http.StatusNotFound)
+		return
+	}
+
+	w.Write([]byte("Avatar updated successfully"))
+}
+
 // UpdateUser godoc
 // @Summary Update user data
 // @Description Update email or username for user
