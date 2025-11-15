@@ -31,6 +31,7 @@ eleven_client = ElevenLabs(
     # httpx_client=httpx_client,
 )
 app = FastAPI(title="AI", version="0.1.0",
+              root_path="/ai"
               )
 
 
