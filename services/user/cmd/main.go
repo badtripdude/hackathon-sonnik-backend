@@ -1,3 +1,11 @@
+// @title Sonnik API
+// @version 1.0
+// @description API documentation for Sonnik service
+
+// @host localhost:8080
+// @BasePath /
+
+// @schemes http
 package main
 
 import (
