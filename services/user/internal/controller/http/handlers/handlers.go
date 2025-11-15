@@ -3,6 +3,7 @@ package handlers
 import (
 	"encoding/json"
 	"net/http"
+	"time"
 
 	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/service"
 )
@@ -27,18 +28,29 @@ func NewUserHandler(svc *service.UserService) *UserHandler {
 // @Router /auth/register [post]
 func (h *UserHandler) Register(w http.ResponseWriter, r *http.Request) {
 	var req struct {
-		Email    string `json:"email"`
-		Password string `json:"password"`
+		Email     string `json:"email"`
+		Password  string `json:"password"`
+		Username  string `json:"username"`
+		BirthDate string `json:"birth_date"`
 	}
+
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
-	tokens, err := h.svc.Register(r.Context(), req.Email, req.Password)
+
+	birthDate, err := time.Parse("2006-01-02", req.BirthDate)
+	if err != nil {
+		http.Error(w, "invalid birth_date format", http.StatusBadRequest)
+		return
+	}
+
+	tokens, err := h.svc.Register(r.Context(), req.Email, req.Password, req.Username, birthDate)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
+
 	json.NewEncoder(w).Encode(tokens)
 }
 

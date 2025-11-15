@@ -9,8 +9,10 @@ definitions:
   models.LoginRequest:
     properties:
       email:
+        example: test@example.com
         type: string
       password:
+        example: password123
         type: string
     type: object
   models.RefreshRequest:
@@ -20,9 +22,17 @@ definitions:
     type: object
   models.RegisterRequest:
     properties:
+      birth_date:
+        example: "1990-01-01"
+        type: string
       email:
+        example: test@example.com
         type: string
       password:
+        example: password123
+        type: string
+      username:
+        example: JohnDoe
         type: string
     type: object
   models.TokenPair:
@@ -42,6 +52,9 @@ definitions:
     type: object
   models.User:
     properties:
+      birth_date:
+        example: "1990-01-01"
+        type: string
       created_at:
         example: "2025-11-15T09:48:37Z"
         type: string
@@ -53,6 +66,9 @@ definitions:
         type: string
       password_hash:
         example: $2a$12$1eBqZjVvAY.gmfcRUlR24uR8sSZHcF/DIeJu/eM7z0USl6OVCFVFy
+        type: string
+      username:
+        example: JohnDoe
         type: string
     type: object
 host: localhost:8080

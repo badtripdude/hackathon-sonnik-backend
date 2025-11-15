@@ -219,10 +219,12 @@ const docTemplate = `{
             "type": "object",
             "properties": {
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "test@example.com"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "password123"
                 }
             }
         },
@@ -237,11 +239,21 @@ const docTemplate = `{
         "models.RegisterRequest": {
             "type": "object",
             "properties": {
+                "birth_date": {
+                    "type": "string",
+                    "example": "1990-01-01"
+                },
                 "email": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "test@example.com"
                 },
                 "password": {
-                    "type": "string"
+                    "type": "string",
+                    "example": "password123"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "JohnDoe"
                 }
             }
         },
@@ -269,6 +281,10 @@ const docTemplate = `{
         "models.User": {
             "type": "object",
             "properties": {
+                "birth_date": {
+                    "type": "string",
+                    "example": "1990-01-01"
+                },
                 "created_at": {
                     "type": "string",
                     "example": "2025-11-15T09:48:37Z"
@@ -284,6 +300,10 @@ const docTemplate = `{
                 "password_hash": {
                     "type": "string",
                     "example": "$2a$12$1eBqZjVvAY.gmfcRUlR24uR8sSZHcF/DIeJu/eM7z0USl6OVCFVFy"
+                },
+                "username": {
+                    "type": "string",
+                    "example": "JohnDoe"
                 }
             }
         }

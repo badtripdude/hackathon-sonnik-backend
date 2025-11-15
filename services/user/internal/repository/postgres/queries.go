@@ -3,8 +3,8 @@ package postgres
 const (
 	// ---- Users ----
 	saveUserQuery = `
-	INSERT INTO users (email, password_hash)
-	VALUES ($1, $2)
+	INSERT INTO users (email, password_hash, username, birth_date)
+	VALUES ($1, $2, $3, $4)
 	RETURNING id;
 	`
 

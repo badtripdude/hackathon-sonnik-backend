@@ -1,93 +1,95 @@
-package postgres
+	package postgres
 
-import (
-	"context"
-	"database/sql"
-	"errors"
-	"time"
+	import (
+		"context"
+		"database/sql"
+		"errors"
+		"time"
 
-	"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/models"
-	errs "github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/errors"
-	"github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/postgres"
-)
+		"github.com/badtripdude/hackathon-sonnik-backend/services/user/internal/models"
+		errs "github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/errors"
+		"github.com/badtripdude/hackathon-sonnik-backend/services/user/pkg/postgres"
+	)
 
-type PgUserRepo struct {
-	db           postgres.DBTX
-	queryTimeout time.Duration
-}
-
-func NewPgUserRepo(db postgres.DBTX, queryTimeout time.Duration) *PgUserRepo {
-	return &PgUserRepo{
-		db:           db,
-		queryTimeout: queryTimeout,
-	}
-}
-
-func (pg *PgUserRepo) Save(ctx context.Context, user *models.User) error {
-	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
-	defer cancel()
-
-	err := pg.db.QueryRowxContext(timeout, saveUserQuery,
-		user.Email,
-		user.PasswordHash,
-	).Scan(&user.ID)
-	if err != nil {
-		return postgres.CheckUnique(err)
+	type PgUserRepo struct {
+		db           postgres.DBTX
+		queryTimeout time.Duration
 	}
 
-	return nil
-}
-
-func (pg *PgUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
-	user := &models.User{}
-
-	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
-	defer cancel()
-
-	err := pg.db.GetContext(timeout, user, getUserByEmailQuery, email)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrNotFound
+	func NewPgUserRepo(db postgres.DBTX, queryTimeout time.Duration) *PgUserRepo {
+		return &PgUserRepo{
+			db:           db,
+			queryTimeout: queryTimeout,
 		}
-		return nil, err
 	}
 
-	return user, nil
-}
+	func (pg *PgUserRepo) Save(ctx context.Context, user *models.User) error {
+		timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+		defer cancel()
 
-func (pg *PgUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
-	user := &models.User{}
-
-	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
-	defer cancel()
-
-	err := pg.db.GetContext(timeout, user, getUserByIDQuery, id)
-	if err != nil {
-		if errors.Is(err, sql.ErrNoRows) {
-			return nil, errs.ErrNotFound
+		err := pg.db.QueryRowxContext(timeout, saveUserQuery,
+			user.Email,
+			user.PasswordHash,
+			user.Username,
+    		user.BirthDate,
+		).Scan(&user.ID)
+		if err != nil {
+			return postgres.CheckUnique(err)
 		}
-		return nil, err
+
+		return nil
 	}
 
-	return user, nil
-}
+	func (pg *PgUserRepo) GetByEmail(ctx context.Context, email string) (*models.User, error) {
+		user := &models.User{}
 
-func (pg *PgUserRepo) DeleteByID(ctx context.Context, id string) error {
-	timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
-	defer cancel()
+		timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+		defer cancel()
 
-	r, err := pg.db.ExecContext(timeout, deleteUserByIDQuery, id)
-	if err != nil {
+		err := pg.db.GetContext(timeout, user, getUserByEmailQuery, email)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, errs.ErrNotFound
+			}
+			return nil, err
+		}
+
+		return user, nil
+	}
+
+	func (pg *PgUserRepo) GetByID(ctx context.Context, id string) (*models.User, error) {
+		user := &models.User{}
+
+		timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+		defer cancel()
+
+		err := pg.db.GetContext(timeout, user, getUserByIDQuery, id)
+		if err != nil {
+			if errors.Is(err, sql.ErrNoRows) {
+				return nil, errs.ErrNotFound
+			}
+			return nil, err
+		}
+
+		return user, nil
+	}
+
+	func (pg *PgUserRepo) DeleteByID(ctx context.Context, id string) error {
+		timeout, cancel := context.WithTimeout(ctx, pg.queryTimeout)
+		defer cancel()
+
+		r, err := pg.db.ExecContext(timeout, deleteUserByIDQuery, id)
+		if err != nil {
+			return err
+		}
+
+		rows, err := r.RowsAffected()
+		if err != nil {
+			return err
+		}
+		if rows == 0 {
+			return errs.ErrNotFound
+		}
+
 		return err
 	}
-
-	rows, err := r.RowsAffected()
-	if err != nil {
-		return err
-	}
-	if rows == 0 {
-		return errs.ErrNotFound
-	}
-
-	return err
-}
